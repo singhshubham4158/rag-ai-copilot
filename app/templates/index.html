@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>AI Copilot</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, #0f172a, #020617);
+    color: white;
+}
+
+/* Layout */
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background: #020617;
+    padding: 20px;
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar h3 {
+    margin-bottom: 10px;
+}
+
+.chat-item {
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.chat-item:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Main Chat */
+.chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+/* Glass container */
+.glass {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Messages */
+#messages {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Chat bubbles */
+.msg {
+    padding: 12px 16px;
+    margin: 10px;
+    border-radius: 15px;
+    max-width: 70%;
+    animation: fadeIn 0.2s ease;
+}
+
+.user {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    margin-left: auto;
+}
+
+.bot {
+    background: rgba(51, 65, 85, 0.7);
+    margin-right: auto;
+}
+
+/* Input */
+.input-area {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+}
+
+/* Button */
+button {
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
+/* Upload */
+.upload {
+    margin-bottom: 10px;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scroll */
+#messages::-webkit-scrollbar {
+    width: 5px;
+}
+#messages::-webkit-scrollbar-thumb {
+    background: #334155;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+```
+<!-- Sidebar -->
+<div class="sidebar">
+    <h3>📚 Chats</h3>
+    <div class="chat-item">New Chat</div>
+    <div class="chat-item">Previous Chat</div>
+</div>
+
+<!-- Main Chat -->
+<div class="chat">
+
+    <h2>📄 AI Copilot</h2>
+
+    <div class="glass">
+
+        <!-- Upload -->
+        <div class="upload">
+            <input type="file" id="fileUpload" />
+            <button onclick="upload()">Upload</button>
+        </div>
+
+        <!-- Messages -->
+        <div id="messages"></div>
+
+        <!-- Input -->
+        <div class="input-area">
+            <input id="input" placeholder="Ask something..." />
+            <button onclick="send()">Send</button>
+        </div>
+
+    </div>
+
+</div>
+```
+
+</div>
+
+<script>
+
+// Typing animation
+function typeText(id, text, speed=15) {
+    let i = 0;
+    let el = document.getElementById(id);
+    el.innerHTML = "";
+
+    function typing() {
+        if (i < text.length) {
+            el.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(typing, speed);
+        }
+    }
+    typing();
+}
+
+// Send message
+async function send() {
+    let input = document.getElementById("input").value;
+    if (!input) return;
+
+    addMessage("👤 " + input, "user");
+    document.getElementById("input").value = "";
+
+    let id = addMessage("🤖 Typing...", "bot");
+
+    let res = await fetch(`/ask?q=${encodeURIComponent(input)}`);
+    let data = await res.json();
+
+    let text = (data.answer || "") +
+        "<br><small>Sources: " + (data.sources || []).join(" ") + "</small>";
+
+    typeText(id, text);
+}
+
+// Add message
+function addMessage(text, type) {
+    let id = "msg-" + Date.now();
+
+    document.getElementById("messages").innerHTML +=
+        `<div id="${id}" class="msg ${type}">${text}</div>`;
+
+    let box = document.getElementById("messages");
+    box.scrollTop = box.scrollHeight;
+
+    return id;
+}
+
+// Enter key
+document.getElementById("input").addEventListener("keypress", e => {
+    if (e.key === "Enter") send();
+});
+
+// Upload
+async function upload() {
+    let file = document.getElementById("fileUpload").files[0];
+    if (!file) return alert("Select file");
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    await fetch("/upload", { method: "POST", body: formData });
+
+    alert("Uploaded!");
+}
+
+</script>
+
+</body>
+</html>
